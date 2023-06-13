@@ -45,6 +45,7 @@ function love.load()
     }
     require "states.start"
     require "states.menu"
+    require "states.dream"
 
     function load(state)
         gameState = state
@@ -65,6 +66,7 @@ function love.load()
     fnt_small = love.graphics.newFont('fnt_small.ttf', 8)
     img_select = love.graphics.newImage('menu/soul_small.png')
     img_flower = love.graphics.newImage('dream/flower.png')
+    snd_menu = love.audio.newSource('snd_menu.wav', 'stream')
 
     gt = 0 -- game time
     math.randomseed(os.time())

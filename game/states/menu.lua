@@ -9,7 +9,7 @@ function gs.menu.load()
     menu.img_patch = love.graphics.newImage('menu/patch.png')
     menu.img_tori0 = love.graphics.newImage('menu/tori0.png')
     menu.img_tori1 = love.graphics.newImage('menu/tori1.png')
-    menu.list = {{string="Start", selected=true, go="menu"}, {string='Quit', selected=false, go="quit"}}
+    menu.list = {{string="Start", selected=true, go="dream"}, {string='Quit', selected=false, go="quit"}}
     menu.select = 1
     menu.playing = false
     menu.fade = 0
@@ -81,7 +81,7 @@ function gs.menu.update(gt)
     end
 end
 
-function gs.menu.draw()
+function gs.menu.draw(screen)
     dslayout:draw(screen,
     function()
         love.graphics.setFont(fnt_main)

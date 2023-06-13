@@ -28,7 +28,7 @@ function gs.start.update(gt)
     end
 end
 
-function gs.start.draw()
+function gs.start.draw(screen)
     dslayout:draw(screen,
     function() 
         -- TOP
