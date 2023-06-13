@@ -40,22 +40,22 @@ function gs.dream.load()
         spr = {
             normal = {
                 [0] = {
-                    [0] = love.graphics.newImage('dream/frisk/0_0.png'),
-                    [1] = love.graphics.newImage('dream/frisk/0_1.png'),
+                    [0] = love.graphics.newImage('frisk/0_0.png'),
+                    [1] = love.graphics.newImage('frisk/0_1.png'),
                 },
                 [1] = {
-                    [0] = love.graphics.newImage('dream/frisk/1_0.png'),
-                    [1] = love.graphics.newImage('dream/frisk/1_1.png'),
-                    [3] = love.graphics.newImage('dream/frisk/1_2.png'),
+                    [0] = love.graphics.newImage('frisk/1_0.png'),
+                    [1] = love.graphics.newImage('frisk/1_1.png'),
+                    [3] = love.graphics.newImage('frisk/1_2.png'),
                 },
                 [2] = {
-                    [0] = love.graphics.newImage('dream/frisk/2_0.png'),
-                    [1] = love.graphics.newImage('dream/frisk/2_1.png'),
+                    [0] = love.graphics.newImage('frisk/2_0.png'),
+                    [1] = love.graphics.newImage('frisk/2_1.png'),
                 },
                 [3] = {
-                    [0] = love.graphics.newImage('dream/frisk/3_0.png'),
-                    [1] = love.graphics.newImage('dream/frisk/3_1.png'),
-                    [3] = love.graphics.newImage('dream/frisk/3_2.png'),
+                    [0] = love.graphics.newImage('frisk/3_0.png'),
+                    [1] = love.graphics.newImage('frisk/3_1.png'),
+                    [3] = love.graphics.newImage('frisk/3_2.png'),
                 },
             },
             sleep = {}
@@ -85,9 +85,6 @@ function gs.dream.load()
                 [0] = {x1 = 235, y1 = 97, x2 = 276, y2 = 140,},
                 [1] = {x1 = 255, y1 = 137, x2 = 276, y2 = 160,},
                 [2] = {x1 = 116, y1 = 195, x2 = 241, y2 = 215,},
-            },
-            entries = {
-                [0] = {x1 }
             }
         },
         [1] = {
@@ -352,4 +349,8 @@ function gs.dream.draw(screen)
         
     end
     )
+end
+
+function gs.dream.leave()
+
 end

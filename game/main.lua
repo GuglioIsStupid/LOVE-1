@@ -40,14 +40,15 @@ function love.load()
     gs = {
         start = {load, draw, update},
         menu = {load, draw, update},
-        core = {load, draw, update},
         intro = {load, draw, update},
         dream = {load, draw, update},
+        ruins = {load, draw, update},
     }
     require "states.start"
     require "states.menu"
     require "states.dream"
     require "states.intro"
+    require "states.ruins"
 
     function load(state)
         gameState = state
