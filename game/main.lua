@@ -1,4 +1,5 @@
 __GAME_VERSION = "V0.1"
+idleTimer = 0
 
 function love.load()
     require "libs.dslayout"
@@ -46,6 +47,7 @@ function love.load()
     require "states.start"
     require "states.menu"
     require "states.dream"
+    require "states.intro"
 
     function load(state)
         gameState = state
@@ -76,6 +78,7 @@ function love.update(dt)
     input:update()
     if dt >= 1 then gt = 0.000001
     else gt = dt end
+    idleTimer = idleTimer + gt
     gs[gameState].update(dt)
     if input:pressed("select") then love.event.quit() end
 end
