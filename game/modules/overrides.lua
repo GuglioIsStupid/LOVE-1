@@ -12,6 +12,24 @@ function math.lerp(a, b, t)
     return a + (b - a) * t
 end
 
+-- String function overrides
+function string.startsWith(str, start)
+    return str:sub(1, #start) == start
+end
+
+function string.endsWith(str, ending)
+    return ending == "" or str:sub(-#ending) == ending
+end
+
+function string.split(str, sep)
+    local sep, fields = sep or ":", {}
+    local pattern = string.format("([^%s]+)", sep)
+    str:gsub(pattern, function(c)
+        fields[#fields + 1] = c
+    end)
+    return fields
+end
+
 -- love function overrides
 local oni = love.graphics.newImage
 function love.graphics.newImage(path)

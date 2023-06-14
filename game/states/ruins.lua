@@ -91,7 +91,7 @@ function gs.ruins.load()
                 [0] = love.graphics.newImage("npc/flowey/0.png"),
                 [1] = love.graphics.newImage("npc/flowey/1.png")
             }
-        }
+        },
     }
 
     ruin.camera = {
