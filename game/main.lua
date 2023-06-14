@@ -10,11 +10,15 @@ function love.load()
 
     love.graphics.setDefaultFilter("nearest", "nearest")
 
+    require "modules.overrides"
+
     -- libs
     baton = require "libs.baton"
+    debugGraph = require 'libs.debugGraph'
+    Timer = require "libs.timer"
 
     -- modules
-    require "modules.overrides"
+    
     -- Setups
     input = baton.new {
         controls = {
@@ -95,6 +99,10 @@ function love.load()
     img_flower = love.graphics.newImage('dream/flower.png')
     snd_menu = love.audio.newSource('snd_menu.wav', 'stream')
 
+    fpsGraph = debugGraph:new('fps', 0, 0)
+    memGraph = debugGraph:new('mem', 0, 30)
+    gtGraph = debugGraph:new('custom', 0, 60)
+
     -- for testing, go to battle
 
     setBattle("flowey.beginning")
@@ -105,6 +113,7 @@ end
 
 function love.update(dt)
     input:update()
+    Timer.update(dt)
     if dt >= 1 then gt = 0.000001
     else gt = dt end
     idleTimer = idleTimer + gt
@@ -118,6 +127,11 @@ function love.update(dt)
         end
     end
     if input:pressed("select") then love.event.quit() end
+
+    fpsGraph:update(dt)
+    memGraph:update(dt)
+    gtGraph:update(dt, math.floor(gt * 1000))
+    gtGraph.label = 'GT: ' ..  math.round(gt, 4)
 end
 
 function love.mousemoved(x,y,dx,dy,istouch)
@@ -142,6 +156,13 @@ function love.draw(screen)
             bs[battleState].draw(screen)
         end
     end
+
+    love.graphics.push()
+        love.graphics.scale(1.25, 1.25)
+        fpsGraph:draw()
+        memGraph:draw()
+        gtGraph:draw()
+    love.graphics.pop()
 end
 
 function love.quit()

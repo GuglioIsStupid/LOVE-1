@@ -6,6 +6,14 @@ local function wait(t)
     -- pause the whole game for t seconds.
     os.execute("sleep " .. tonumber(t))
 end
+local function linearTween(t, b, c, d)
+    -- t = current time
+    -- b = start value
+    -- c = change in value
+    -- d = duration
+
+    return c*t/d + b
+end
 function bs.flowey.beginning.load()
     battle = {}
 
@@ -59,12 +67,339 @@ function bs.flowey.beginning.load()
     battle.attackCache = {}
 
     flameX = 300
-    torielX = 300
+    torielX = 500
+
+    battle.flame = {
+        x=flameX,y=120,
+        spr = {
+            [0] = love.graphics.newImage("npc/flowey/fire/0.png"),
+            [1] = love.graphics.newImage("npc/flowey/fire/1.png"),
+            [2] = love.graphics.newImage("npc/flowey/fire/2.png"),
+            [3] = love.graphics.newImage("npc/flowey/fire/3.png"),
+        },
+        timer = 0,
+        frame = 0,
+        update = function(gt)
+            battle.flame.timer = battle.flame.timer + gt
+            if battle.flame.timer > 0.1 then
+                battle.flame.frame = battle.flame.frame + 1
+                if battle.flame.frame > 3 then battle.flame.frame = 0 end
+                battle.flame.timer = 0
+            end
+        end,
+    }
+    --battle.toriel = love.graphics.newImage("npc/flowey/toriel/0.png")
+    battle.toriel = {
+        x=torielX,y=120,
+        spr = {
+            normal = {
+                [0] = love.graphics.newImage("npc/toriel/dialogue/normal/0.png"),
+                [1] = love.graphics.newImage("npc/toriel/dialogue/normal/1.png"),
+            },
+            left = {
+                [0] = love.graphics.newImage("npc/toriel/dialogue/left/0.png"),
+                [1] = love.graphics.newImage("npc/toriel/dialogue/left/1.png"),
+            },
+        },
+        timer = 0,
+        frame = 0,
+        curAnim = "left",
+        update = function(gt)
+            battle.toriel.timer = battle.toriel.timer + gt
+            if battle.toriel.timer > 0.1 then
+                battle.toriel.frame = battle.toriel.frame + 1
+                if battle.toriel.frame > 1 then battle.toriel.frame = 0 end
+                battle.toriel.timer = 0
+            end
+        end,
+
+        dialogues = {
+            showDialogue = true,
+            showBox = true,
+            curDialogue = "",
+            curText = "",
+            curCharacter = 0,
+
+            lines = {
+                [0] = {
+                    "What a terrible\ncreature,{wait=0.2} torturing\nsuch a poor,{wait=0.2}\ninnocent youth...",
+                    "{main_animation=normal}Ah, do not be\nafraid,{wait=0.2} my child.",
+                    "I am {color={0,0,1,1}|TORIEL}, caretaker\nof the {color={1,0,0,1}|RUINS}.",
+                    "I pass through this\n place everyday to\nsee ifanyone has\nfallendown.",
+                    "You are the first\nhuman to come here\nin a long time.",
+                    "Come!{wait=0.2}\nI will guide you\nthrough the catacombs.",
+                }
+            },
+
+            curLine = 1,
+            timer = 0,
+            waitTimer = 0,
+            waitTime = 0,
+            cur_animation = "normal",
+            main_animation = "normal",
+            timeTimer = 0,
+            curDialogueLines = 0,
+            finished = false,
+            shakeyText = false,
+            largeText = false,
+
+            blip = love.audio.newSource("dialogue/toriel/0.wav", "static"),
+
+            updateDialogue = function(gt, ss)
+                if battle.toriel.dialogues.showDialogue then
+                    if battle.toriel.dialogues.waitTimer > 0 then
+                        battle.toriel.dialogues.waitTimer = battle.toriel.dialogues.waitTimer - gt
+                    else
+                        if battle.toriel.dialogues.timer > 0 then
+                            battle.toriel.dialogues.timer = battle.toriel.dialogues.timer - gt
+                        else
+                            if battle.toriel.dialogues.curLine > #battle.toriel.dialogues.lines[battle.toriel.dialogues.curDialogueLines] then
+                                battle.toriel.dialogues.showDialogue = false
+                                battle.state = "move"
+                            else
+                                line = battle.toriel.dialogues.lines[battle.toriel.dialogues.curDialogueLines][battle.toriel.dialogues.curLine]
+                                if battle.toriel.dialogues.timer <= 0 and battle.toriel.dialogues.waitTimer <= 0 and ss then
+                                    battle.toriel.dialogues.timer = 0.05
+                                    battle.toriel.dialogues.curText = battle.toriel.dialogues.curText .. line:sub(battle.toriel.dialogues.curCharacter, battle.toriel.dialogues.curCharacter)
+                                    battle.toriel.dialogues.curCharacter = battle.toriel.dialogues.curCharacter + 1
+                                    -- every 2 characters, play battle.toriel.dialogues.blip but not when its done
+                                    if battle.toriel.dialogues.curCharacter % 2 == 0 and battle.toriel.dialogues.curCharacter < #line then
+                                        battle.toriel.dialogues.blip:stop()
+                                        battle.toriel.dialogues.blip:play()
+                                    end
+                                    -- ever 4, change battle.toriel.frame by 1, if its larger than the amount of frames, set it to 0
+                                    if battle.toriel.dialogues.curCharacter % 6 == 0 and battle.toriel.dialogues.curCharacter < #line then
+                                        battle.toriel.frame = battle.toriel.frame + 1
+                                        if battle.toriel.frame > #battle.toriel.body[battle.toriel.dialogues.cur_animation] then
+                                            battle.toriel.frame = 0
+                                        end
+                                    elseif battle.toriel.dialogues.curCharacter >= #line then
+                                        battle.toriel.frame = 0
+                                    end
+                                else
+                                    battle.toriel.dialogues.waitTimer = battle.toriel.dialogues.waitTimer - gt
+                                end
+                                if line:sub(battle.toriel.dialogues.curCharacter, battle.toriel.dialogues.curCharacter) == "{" then
+                                    -- find the next "}"
+                                    local nextBracket = line:find("}", battle.toriel.dialogues.curCharacter)
+                                    local cmd = line:sub(battle.toriel.dialogues.curCharacter+1, nextBracket-1)
+                                    print(cmd)
+                                    -- remove the command from the line
+                                    if cmd:find("wait") then
+                                        local cmd = cmd:split("=")
+                                        if cmd[1] == "wait" then
+                                            battle.toriel.dialogues.waitTimer = tonumber(cmd[2])
+                                        end
+                                        if cmd[1] == "main_animation" then
+                                            battle.toriel.dialogues.main_animation = cmd[2]
+                                        end
+
+                                        -- remove the command from the line
+                                        line = line:sub(0, battle.toriel.dialogues.curCharacter-1) .. line:sub(nextBracket+1, #line)
+                                        battle.toriel.dialogues.lines[battle.toriel.dialogues.curDialogueLines][battle.toriel.dialogues.curLine] = line
+                                    else
+                                        local nextBracket = line:find("}", battle.toriel.dialogues.curCharacter)
+                                        local cmd = line:sub(battle.toriel.dialogues.curCharacter+1, nextBracket-1)
+                                        -- remove the command from the line
+                                        line = line:sub(0, battle.toriel.dialogues.curCharacter-1) .. line:sub(nextBracket+1, #line)
+                                        battle.toriel.dialogues.lines[battle.toriel.dialogues.curDialogueLines][battle.toriel.dialogues.curLine] = line
+                                        if cmd:find(",") then
+                                            -- split by ,
+                                            local args = {}
+                                            for arg in cmd:gmatch("[^,]+") do
+                                                table.insert(args, arg)
+                                            end
+                                            for i=1,#args do
+                                                local arg = args[i]
+                                                --print(arg)
+                                                if arg:find("=") then
+                                                    local argName = arg:match("(.-)=")
+                                                    local argValue = arg:match("=(.+)")
+                                                    print(argName, argValue)
+                                                    if argName == "main_animation" then
+
+                                                        battle.toriel.dialogues.main_animation = argValue
+                                                    elseif argName == "animation" then
+                                                        battle.toriel.dialogues.timer = 0.05
+                                                        battle.toriel.dialogues.curDialogue = ""
+                                                        battle.toriel.dialogues.cur_animation = argValue
+                                                        battle.toriel.dialogues.showBox = false
+                                                    elseif argName == "time" then
+                                                        battle.toriel.dialogues.timeTimer = tonumber(argValue)
+                                                        battle.toriel.showDialogue = false
+                                                    elseif argName == "setup_attack" then
+                                                        battle.toriel.attacks[argValue].attack()
+                                                        print("setup attack " .. argValue)
+                                                    elseif argName == "skip" then
+                                                        battle.toriel.dialogues.changeDialogue()
+                                                    elseif argName == "movestuff" then
+                                                        battle.toriel.attacks.pellets.movestuff = true
+                                                        lastX, lastY = battle.soul.x, battle.soul.y
+                                                    elseif argName == "shakey" then
+                                                        battle.toriel.dialogues.shakeyText = true
+                                                        battle.toriel.dialogues.chars = {}
+                                                        local newLines = {}
+                                                        -- get newline count
+                                                        local newlineCount = 0
+                                                        local charterIndex = 0
+                                                        for i=1,#battle.toriel.dialogues.curText do
+                                                            if battle.toriel.dialogues.curText:sub(i,i) == "\n" then
+                                                                newlineCount = newlineCount + 1
+                                                                charterIndex = i
+
+                                                                table.insert(newLines, {"\n", index=charterIndex})
+                                                            end
+                                                        end
+                                                        local allNewlines = ""
+                                                        for i=1,#battle.toriel.dialogues.curText do
+                                                            local curIndex = i
+                                                            local newlines = ""
+                                                            -- check if there is a newline
+                                                            for j=1,#newLines do
+                                                                if newLines[j].index == curIndex then
+                                                                    newlines = newlines .. "\n"
+                                                                end
+                                                            end
+                                                            local char = battle.toriel.dialogues.curText:sub(i,i)
+                                                            local str = newlines .. char
+                                                            table.insert(battle.toriel.dialogues.chars, {char = str, shakey = math.random(-2,2), shakex = math.random(-2,2)})
+                                                        end
+                                                    elseif argName == "large" then
+                                                        battle.toriel.dialogues.largeText = true
+                                                    elseif argName == "movein" then
+                                                        battle.toriel.attacks.pelletcircle.movein = true
+                                                        battle.toriel.dialogues.main_animation = "laugh"
+                                                        battle.laugh:play()
+                                                    end
+                                                end
+                                            end
+                                        else
+                                            if cmd:find("=") then
+                                                local argName = cmd:match("(.-)=")
+                                                local argValue = cmd:match("=(.+)")
+                                                print(argName .. " " .. argValue)
+                                                if argName == "main_animation" then
+                                                    battle.toriel.dialogues.main_animation = argValue
+                                                    --print(battle.toriel.dialogues.main_animation)
+                                                elseif argName == "animation" then
+                                                    battle.toriel.dialogues.cur_animation = argValue
+                                                    battle.toriel.dialogues.showBox = false
+                                                elseif argName == "time" then
+                                                    battle.toriel.dialogues.timeTimer = tonumber(argValue)
+                                                elseif argName == "setup_attack" then
+                                                    battle.toriel.attacks[argValue].attack()
+                                                    print("setup attack " .. argValue)
+                                                elseif argName == "skip" then
+                                                    battle.toriel.dialogues.changeDialogue()
+                                                elseif argName == "movestuff" then
+                                                    battle.toriel.attacks.pellets.movestuff = true
+                                                    lastX, lastY = battle.soul.x, battle.soul.y
+                                                elseif argName == "shakey" then
+                                                    battle.toriel.dialogues.shakeyText = true
+                                                    battle.toriel.dialogues.chars = {}
+                                                    local newLines = {}
+                                                    -- get newline count
+                                                    local newlineCount = 0
+                                                    local charterIndex = 0
+                                                    for i=1,#battle.toriel.dialogues.curText do
+                                                        if battle.toriel.dialogues.curText:sub(i,i) == "\n" then
+                                                            newlineCount = newlineCount + 1
+                                                            charterIndex = i
+
+                                                            table.insert(newLines, {"\n", index=charterIndex})
+                                                        end
+                                                    end
+                                                    local allNewlines = ""
+                                                    for i=1,#battle.toriel.dialogues.curText do
+                                                        local curIndex = i
+                                                        local newlines = ""
+                                                        -- check if there is a newline
+                                                        for j=1,#newLines do
+                                                            if newLines[j].index == curIndex then
+                                                                newlines = newlines .. "\n"
+                                                            end
+                                                        end
+                                                        local char = battle.toriel.dialogues.curText:sub(i,i)
+                                                        local str = newlines .. char
+                                                        table.insert(battle.toriel.dialogues.chars, {char = str, shakey = math.random(-2,2), shakex = math.random(-2,2)})
+                                                    end
+                                                elseif argName == "large" then
+                                                    battle.toriel.dialogues.largeText = true
+                                                elseif argName == "movein" then
+                                                    battle.toriel.dialogues.moveIn = true
+                                                    battle.laugh:play()
+                                                    battle.toriel.dialogues.showBox = false
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
+                -- count timers
+                if battle.toriel.dialogues.timeTimer > 0 then
+                    battle.toriel.dialogues.timeTimer = battle.toriel.dialogues.timeTimer - gt
+                else
+                    battle.toriel.dialogues.timeTimer = 0
+                    if battle.toriel.dialogues.cur_animation ~= battle.toriel.dialogues.main_animation then
+                        battle.toriel.dialogues.cur_animation = battle.toriel.dialogues.main_animation
+                        battle.toriel.frame = 0
+                    end                    
+                end
+
+                if battle.toriel.dialogues.timer > 0 then
+                    battle.toriel.dialogues.timer = battle.toriel.dialogues.timer - gt
+                else
+                    battle.toriel.dialogues.timer = 0
+                    battle.toriel.dialogues.showDialogue = true
+                end
+            end,
+
+            drawDialogue = function()
+                if battle.toriel.dialogues.showDialogue and battle.toriel.dialogues.showBox then
+                    love.graphics.draw(battle.enemy.dialogues.spr[0], 235, 120, 0, 0.7, 0.7)
+                    love.graphics.setColor(0,0,0)
+                    if not battle.toriel.dialogues.shakeyText then
+                        love.graphics.printf(battle.toriel.dialogues.curText, 260, 125, 200, "left", 0, (battle.toriel.dialogues.largeText and 4 or 1), (battle.toriel.dialogues.largeText and 4 or 1))
+                    else
+                        -- instead, prints each character individually, with a random offset that changes
+                       --[[  for i=1,#battle.toriel.dialogues.chars do
+                            local char = battle.toriel.dialogues.chars[i]
+                            -- update shakey and shakex
+                            char.shakey = math.random(-2,2)
+                            char.shakex = math.random(-2,2)
+                            love.graphics.printf(char.char, 260 + char.shakex, 125 + char.shakey, 200, "left")
+                        end ]]
+                        love.graphics.printf(battle.toriel.dialogues.curText, 260, 125, 200, "left", 0, (battle.toriel.dialogues.largeText and 4 or 1), (battle.toriel.dialogues.largeText and 4 or 1))
+                    end
+                    if battle.toriel.dialogues.timeTimer < 0.0001 then
+                        battle.toriel.dialogues.cur_animation = battle.toriel.dialogues.main_animation
+                    end
+                end
+            end,
+
+            changeDialogue = function()
+                battle.toriel.dialogues.curLine = battle.toriel.dialogues.curLine + 1
+                battle.toriel.dialogues.curDialogue = ""
+                battle.toriel.dialogues.curText = ""
+                battle.toriel.dialogues.timer = 0.05
+                battle.toriel.dialogues.curCharacter = 0
+                battle.toriel.dialogues.largeText = false
+                battle.toriel.dialogues.shakeyText = false
+                battle.toriel.dialogues.showBox = true
+                battle.toriel.frame = 0
+            end
+        }
+    }
 
     battle.health = 20
 
     battle.enemy = {
         x=150,y=120,
+        angle=0,rotation=0,
         body = {
             ["normal"] = {
                 [0] = love.graphics.newImage("npc/flowey/dialogue/nice/0.png"),
@@ -189,12 +524,12 @@ function bs.flowey.beginning.load()
                                         battle.enemy.dialogues.blip:play()
                                     end
                                     -- ever 4, change battle.enemy.frame by 1, if its larger than the amount of frames, set it to 0
-                                    if battle.enemy.dialogues.curCharacter % 4 == 0 and battle.enemy.dialogues.curCharacter < #line then
+                                    if battle.enemy.dialogues.curCharacter % 6 == 0 and battle.enemy.dialogues.curCharacter < #line then
                                         battle.enemy.frame = battle.enemy.frame + 1
                                         if battle.enemy.frame > #battle.enemy.body[battle.enemy.dialogues.cur_animation] then
                                             battle.enemy.frame = 0
                                         end
-                                    else
+                                    elseif battle.enemy.dialogues.curCharacter >= #line then
                                         battle.enemy.frame = 0
                                     end
                                 else
@@ -411,6 +746,7 @@ function bs.flowey.beginning.load()
                 battle.enemy.dialogues.largeText = false
                 battle.enemy.dialogues.shakeyText = false
                 battle.enemy.dialogues.showBox = true
+                battle.enemy.frame = 0
             end
         },
 
@@ -739,12 +1075,13 @@ function bs.flowey.beginning.update(gt)
 
             doingCutscene = true
             part = 0
+            __timer = 0
         end
     end
 
     if battle.laugh:isPlaying() then
         __timer = __timer + gt
-        if __timer >= 1 then
+        if __timer >= 5 then
             __timer = 0
             battle.enemy.frame = battle.enemy.frame + 1
             if battle.enemy.frame > #battle.enemy.body[battle.enemy.dialogues.cur_animation] then
@@ -756,11 +1093,13 @@ function bs.flowey.beginning.update(gt)
     -- I'm sowwy 3:
     if doingCutscene then
         __timer = __timer + gt
+        --print(__timer, part)
         if part == 0 then
             if __timer >= 1.35 then
                 part = 1
                 __timer = 0
                 battle.enemy.dialogues.main_animation = "pissed"
+                battle.enemy.frame = 0
             end
         elseif part == 1 then
             if __timer >= 0.55 then
@@ -792,37 +1131,49 @@ function bs.flowey.beginning.update(gt)
                 __timer = 0
                 showFlames = true
             end
-        elseif part == 6 then
+        elseif part == 6 and not flameTween then
             if __timer >= 0.5 then
-                -- make flameX closer to battle.enemy.x
-                flameX = flameX + (battle.enemy.x - flameX) / 10
-                -- when its close enough, move to the next part
-                if math.abs(battle.enemy.x - flameX) < 1 then
-                    part = 7
-                    __timer = 0
-                    showFlames = false
-                elseif math.abs(battle.enemy.x - flameX) < 5 then
+                flameTween = Timer.tween(0.9, battle.flame, {x=battle.enemy.x+30}, 'linear', function()
+                    -- make flameX closer to battle.enemy.x
+                    -- when its close enough, move to the next part
+                    flameTween2 = Timer.tween(0.1, battle.flame, {y=battle.enemy.y+15}, 'linear', function()
+                        showFlames = false
+                        battle.enemy.dialogues.main_animation = "hurt"
+                        battle.enemy.frame = 0
+                        battle.enemy.angle = battle.enemy.angle - 20 * gt
+                        if battle.enemy.angle >= -100 then
+                            battle.enemy.angle = -100
+                        end
+                        battle.enemy.rotation = math.rad(battle.enemy.angle)
+                        -- make y go up very little and x go down a lot
+                        if enemyTweenX then
+                            Timer.cancel(enemyTweenX)
+                        end
+                        if enemyTweenY then
+                            Timer.cancel(enemyTweenY)
+                        end
+                        enemyTweenX = Timer.tween(1, battle.enemy, {x=-100}, 'linear', function()
+                        end)
+                        enemyTweenY = Timer.tween(1, battle.enemy, {y=20}, 'linear', function()
+                            part = 8
+                            __timer = 0
+                        end)
+                    end)
+                end)
+
+                if math.abs(battle.enemy.x - flameX) < 5 then
                     battle.enemy.dialogues.main_animation = "shock"
+                    battle.enemy.frame = 0
                 end
             end
-        elseif part == 7 then
-            battle.enemy.dialogues.main_animation = "pain"
-            battle.enemy.angle = battle.enemy.angle - 10 * gt
-            if battle.enemy.angle >= -120 then
-                battle.enemy.angle = -120
-            end
-            battle.enemy.rotation = math.rad(battle.enemy.angle)
-            -- make y go up very little and x go down a lot
-            battle.enemy.y = battle.enemy.y - 5 * gt
-            battle.enemy.x = battle.enemy.x + 15 * gt
-            if battle.enemy.y <= 0 then
-                battle.enemy.y = 0
-                part = 8
-                __timer = 0
-            end
-        elseif part == 8 then
+        elseif part == 7 and not enemyTweenX and not enemyTweenY then
+        elseif part == 8 and not torielXTween then
             -- move torielX closer to the middle
-            torielX = torielX + (160 - torielX) / 10
+            --torielX = linearTween(__timer, 0, torielX, 1)
+            torielXTween = Timer.tween(1, battle.toriel, {x=0}, 'linear', function()
+                part = 9
+                __timer = 0
+            end)
         end
     end
 end
@@ -831,11 +1182,16 @@ function bs.flowey.beginning.draw(screen)
     dslayout:draw(screen,
     function()
         -- TOP
-        love.graphics.draw(battle.enemy.body[battle.enemy.dialogues.cur_animation][battle.enemy.frame], 150, 120, 0, 2, 2)
+        love.graphics.draw(battle.enemy.body[battle.enemy.dialogues.cur_animation][battle.enemy.frame], 150, 120, battle.enemy.rotation, 2, 2)
+        love.graphics.draw(battle.toriel.spr[battle.toriel.curAnim][battle.toriel.frame], torielX, 0, 0, 2, 2)
+        if showFlames then love.graphics.draw(battle.flame.spr[battle.flame.frame], battle.flame.x, battle.flame.y, 0, 2, 2) end
 
         -- draw the dialogue with fnt_small
         love.graphics.setFont(fnt_dialogue)
         battle.enemy.dialogues.drawDialogue()
+        if torielX < 5 then
+            battle.toriel.dialogues.drawDialogue()
+        end
 
         -- draw the attack
         if battle.attackCache.pellets ~= nil then

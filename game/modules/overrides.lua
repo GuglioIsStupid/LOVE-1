@@ -2,8 +2,9 @@
 function math.sign(x)
     return x > 0 and 1 or x < 0 and -1 or 0
 end
-function math.round(x)
-    return math.floor(x + 0.5)
+function math.round(n, deci)
+    deci = 10^(deci or 0)
+    return math.floor(n*deci+.5)/deci
 end
 function math.clamp(x, min, max)
     return x < min and min or x > max and max or x
@@ -49,6 +50,10 @@ function love.audio.newSource(path, type)
 end
 local onf = love.graphics.newFont
 function love.graphics.newFont(path, size)
+    if type(path) == "number" then
+        size = path
+        path = "fnt_main.ttf"
+    end
     path = "assets/fonts/" .. path
     return onf(path, size)
 end
