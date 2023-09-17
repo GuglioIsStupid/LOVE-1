@@ -1,6 +1,8 @@
 __GAME_VERSION = "V0.1"
 idleTimer = 0
 
+require "modules.overrides"
+
 function love.load()
     require "libs.dslayout"
     dslayout:init({
@@ -9,8 +11,6 @@ function love.load()
     })
 
     love.graphics.setDefaultFilter("nearest", "nearest")
-
-    require "modules.overrides"
 
     -- libs
     baton = require "libs.baton"
